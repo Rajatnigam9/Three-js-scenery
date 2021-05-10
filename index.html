@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Stick&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/index.css" />
+
+    <title>1 - Choose a Bag</title>
+  </head>
+
+  <body>
+    <!--touch-action="none" for best results from PEP-->
+    <canvas id="renderCanvas" touch-action="none"> </canvas>
+  </body>
+
+  <!-- Load Up Babylon -->
+  <script src="/babylon.js"></script>
+
+  <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+  
+  <script src="/babylonjs.loaders.min.js"></script>
+
+  <script src="/cannon.js"></script>
+  <script src="/pep.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.2/socket.io.js"></script>
+  <script>
+    //  ******  BABYLON JS
+
+    let canvas = document.getElementById("renderCanvas"); // Get the canvas element
+
+    let engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine
+
+    let createScene = () => {
+      let scene = new BABYLON.Scene(engine);
+
+      // Theme Sound
+      var music = new BABYLON.Sound(
+        "Music",
+        "./int_one/int_one_theme.wav",
+        scene,
+        null,
+        {
+          loop: true,
+          autoplay: true,
+        }
+      );
+
+      let camera;
+
+      //  ******  C A M E R A
+
+      camera = new BABYLON.UniversalCamera(
+        "UniversalCamera",
+        new BABYLON.Vector3(0, 0, 20),
+        scene
+      );
+
+     // camera.attachControl(canvas, true);
+
+      camera.setTarget(new BABYLON.Vector3(0, 0, 0));
+
+      //  ******  L I G H T S
+
+      //Directional Light
+      var light = new BABYLON.DirectionalLight(
+        "DirectionalLight",
+        new BABYLON.Vector3(0, 0, -1),
+        scene
+      );
+      light.diffuse = new BABYLON.Color3(1, 1, 1);
+      light.specular = new BABYLON.Color3(1, 1, 1);
+
+      light.intensity = .2;
+
+      //  ******  S K Y B O X
+      /*
+      var skybox = BABYLON.MeshBuilder.CreateBox("skyBox", { size: 2000.0 }, scene)
+      var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene)
+      skyboxMaterial.backFaceCulling = false;
+      skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture(
+        "./skybox/skybox",
+        scene
+      )
+      skyboxMaterial.reflectionTexture.coordinatesMode =
+        BABYLON.Texture.SKYBOX_MODE;
+      skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0)
+      skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0)
+      skybox.material = skyboxMaterial;
+
+      skybox.rotation.y = -500;
+    */
+      // ****** P H Y S I C S
+
+      var gravityVector = new BABYLON.Vector3(0, -9.81, 0);
+      var physicsPlugin = new BABYLON.CannonJSPlugin();
+      scene.enablePhysics(gravityVector, physicsPlugin);
+
+      // ****** M E S H E S
+
+      // HelperSphere
+
+      //HelperSphereMaterial
+      var helperSphereMat = new BABYLON.StandardMaterial(
+        "helperSphereMat",
+        scene
+      );
+
+      helperSphereMat.alpha = 0.1;
+
+      //HelperSphere
+
+      var helperSphere = BABYLON.MeshBuilder.CreateSphere(
+        "helperSphere",
+        {},
+        scene
+      );
+
+      helperSphere.position = new BABYLON.Vector3(0, 0, 0);
+      helperSphere.scaling = new BABYLON.Vector3(80, 80, 80);
+      helperSphere.rotation = new BABYLON.Vector3(0, 0, 0);
+      helperSphere.material = helperSphereMat;
+
+      //BagOne
+
+      let bagsFullColor = [
+        "bag1.png",
+        "bag2.png",
+        "bag3.png",
+        "bag4.png",
+        "bag5.png",
+      ];
+
+      let currentColors = bagsFullColor;
+
+      //BagOneMaterial
+      var bagOneMat = new BABYLON.StandardMaterial("bagOneMat", scene);
+      bagOneMat.diffuseTexture = new BABYLON.Texture(
+        "./int_one/" + currentColors[0] + "",
+        scene
+      );
+      bagOneMat.diffuseTexture.hasAlpha = true;
+
+      //BagOneMesh
+
+      var bagOne = BABYLON.MeshBuilder.CreatePlane("bagOne", {}, scene);
+
+      bagOne.position = new BABYLON.Vector3(0, 0, 0);
+      bagOne.scaling = new BABYLON.Vector3(3, 3, 3);
+      bagOne.rotation = new BABYLON.Vector3(3, 0, 9.5);
+      bagOne.material = bagOneMat;
+
+      //BagTwo
+
+      //BagTwoMaterial
+      var bagTwoMat = new BABYLON.StandardMaterial("bagTwoMat", scene);
+      bagTwoMat.diffuseTexture = new BABYLON.Texture(
+        "./int_one/" + currentColors[1] + "",
+        scene
+      );
+      bagTwoMat.diffuseTexture.hasAlpha = true;
+
+      //BagTwoMesh
+
+      var bagTwo = BABYLON.MeshBuilder.CreatePlane("bagTwo", {}, scene);
+
+      bagTwo.position = new BABYLON.Vector3(-5, 0, 0);
+      bagTwo.scaling = new BABYLON.Vector3(3, 3, 3);
+      bagTwo.rotation = new BABYLON.Vector3(3, 0, 9.5);
+      bagTwo.material = bagTwoMat;
+
+      //BagThree
+
+      //BagTwoMaterial
+      var bagThreeMat = new BABYLON.StandardMaterial("bagThreeMat", scene);
+      bagThreeMat.diffuseTexture = new BABYLON.Texture(
+        "./int_one/" + currentColors[2] + "",
+        scene
+      );
+      bagThreeMat.diffuseTexture.hasAlpha = true;
+
+      //BagThreeMesh
+
+      var bagThree = BABYLON.MeshBuilder.CreatePlane("bagThree", {}, scene);
+
+      bagThree.position = new BABYLON.Vector3(5, 0, 0);
+      bagThree.scaling = new BABYLON.Vector3(3, 3, 3);
+      bagThree.rotation = new BABYLON.Vector3(3, 0, 9.5);
+      bagThree.material = bagThreeMat;
+
+      //BagFourMaterial
+      var bagFourMat = new BABYLON.StandardMaterial("bagFourMat", scene);
+      bagFourMat.diffuseTexture = new BABYLON.Texture(
+        "./int_one/" + currentColors[3] + "",
+        scene
+      );
+      bagFourMat.diffuseTexture.hasAlpha = true;
+
+      //BagFourMesh
+
+      var bagFour = BABYLON.MeshBuilder.CreatePlane("bagFour", {}, scene);
+
+      bagFour.position = new BABYLON.Vector3(-10, 0, 0);
+      bagFour.scaling = new BABYLON.Vector3(3, 3, 3);
+      bagFour.rotation = new BABYLON.Vector3(3, 0, 9.5);
+      bagFour.material = bagFourMat;
+
+      //BagFiveMaterial
+      var bagFiveMat = new BABYLON.StandardMaterial("bagFiveMat", scene);
+      bagFiveMat.diffuseTexture = new BABYLON.Texture(
+        "./int_one/" + currentColors[4] + "",
+        scene
+      );
+      bagFiveMat.diffuseTexture.hasAlpha = true;
+
+      //BagFiveMesh
+
+      var bagFive = BABYLON.MeshBuilder.CreatePlane("bagFive", {}, scene);
+
+      bagFive.position = new BABYLON.Vector3(10, 0, 0);
+      bagFive.scaling = new BABYLON.Vector3(3, 3, 3);
+      bagFive.rotation = new BABYLON.Vector3(3, 0, 9.5);
+      bagFive.material = bagFiveMat;
+
+      bagOneMat.alpha = 0;
+      bagTwoMat.alpha = 0;
+      bagThreeMat.alpha = 0;
+      bagFourMat.alpha = 0;
+      bagFiveMat.alpha = 0;
+
+      // ** bagOneIntroAnimation
+
+      let frameRate = 10;
+
+      const bagOneIntroAnim = new BABYLON.Animation(
+        "bagOneIntroAnim",
+        "position.x",
+        frameRate,
+        BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+        BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+
+      let bagOneIntroAnimKeys = [];
+
+      bagOneIntroAnimKeys.push({
+        frame: 0,
+        value: -5,
+      });
+
+      bagOneIntroAnimKeys.push({
+        frame: 2 * frameRate,
+        value: 0,
+      });
+
+      bagOneIntroAnim.setKeys(bagOneIntroAnimKeys);
+
+      bagOne.animations.push(bagOneIntroAnim);
+
+      bagOneMat.alpha = 1;
+      scene.beginAnimation(bagOne, 0, 2 * frameRate, true);
+
+      /// ********* bagTwoIntroAnimation
+
+      const bagTwoIntroAnim = new BABYLON.Animation(
+        "bagTwoIntroAnim",
+        "position.x",
+        frameRate,
+        BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+        BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+
+      let bagTwoIntroAnimKeys = [];
+
+      bagTwoIntroAnimKeys.push({
+        frame: 0,
+        value: -10,
+      });
+
+      bagTwoIntroAnimKeys.push({
+        frame: 2 * frameRate,
+        value: -5,
+      });
+
+      bagTwoIntroAnim.setKeys(bagTwoIntroAnimKeys);
+
+      bagTwo.animations.push(bagTwoIntroAnim);
+
+      setTimeout(() => {
+        bagTwoMat.alpha = 1;
+        scene.beginAnimation(bagTwo, 0, 2 * frameRate, true);
+      }, 1500);
+
+      /// ********* bagThreeIntroAnimation
+
+      const bagThreeIntroAnim = new BABYLON.Animation(
+        "bagThreeIntroAnim",
+        "position.x",
+        frameRate,
+        BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+        BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+
+      let bagThreeIntroAnimKeys = [];
+
+      bagThreeIntroAnimKeys.push({
+        frame: 0,
+        value: 10,
+      });
+
+      bagThreeIntroAnimKeys.push({
+        frame: 2 * frameRate,
+        value: 5,
+      });
+
+      bagThreeIntroAnim.setKeys(bagThreeIntroAnimKeys);
+
+      bagThree.animations.push(bagThreeIntroAnim);
+
+      setTimeout(() => {
+        bagThreeMat.alpha = 1;
+        scene.beginAnimation(bagThree, 0, 2 * frameRate, true);
+      }, 1000);
+
+      /// ********* bagFourIntroAnimation
+
+      const bagFourIntroAnim = new BABYLON.Animation(
+        "bagFourIntroAnim",
+        "position.x",
+        frameRate,
+        BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+        BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+
+      let bagFourIntroAnimKeys = [];
+
+      bagFourIntroAnimKeys.push({
+        frame: 0,
+        value: -20,
+      });
+
+      bagFourIntroAnimKeys.push({
+        frame: 2 * frameRate,
+        value: -10,
+      });
+
+      bagFourIntroAnim.setKeys(bagFourIntroAnimKeys);
+
+      bagFour.animations.push(bagFourIntroAnim);
+
+      setTimeout(() => {
+        bagFourMat.alpha = 1;
+        scene.beginAnimation(bagFour, 0, 2 * frameRate, true);
+      }, 1500);
+
+      /// ********* bagFiveIntroAnimation
+
+      const bagFiveIntroAnim = new BABYLON.Animation(
+        "bagFiveIntroAnim",
+        "position.x",
+        frameRate,
+        BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+        BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+
+      let bagFiveIntroAnimKeys = [];
+
+      bagFiveIntroAnimKeys.push({
+        frame: 0,
+        value: 20,
+      });
+
+      bagFiveIntroAnimKeys.push({
+        frame: 2 * frameRate,
+        value: 10,
+      });
+
+      bagFiveIntroAnim.setKeys(bagFiveIntroAnimKeys);
+
+      bagFive.animations.push(bagFiveIntroAnim);
+
+      setTimeout(() => {
+        bagFiveMat.alpha = 1;
+        scene.beginAnimation(bagFive, 0, 2 * frameRate, true);
+      }, 1500);
+
+      let bagsOutroAnimation = () => {
+        // ** bagOneIntroAnimation
+
+        let frameRate = 10;
+
+        const bagOneOutroAnim = new BABYLON.Animation(
+          "bagOneOutroAnim",
+          "position.x",
+          frameRate,
+          BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+          BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+        );
+
+        let bagOneOutroAnimKeys = [];
+
+        bagOneOutroAnimKeys.push({
+          frame: 0,
+          value: 0,
+        });
+
+        bagOneOutroAnimKeys.push({
+          frame: 2 * frameRate,
+          value: -5,
+        });
+
+        bagOneOutroAnim.setKeys(bagOneOutroAnimKeys);
+
+        bagOne.animations.push(bagOneOutroAnim);
+
+        bagOneMat.alpha = 1;
+        scene.beginAnimation(bagOne, 0, 2 * frameRate, true);
+
+        /// ********* bagTwoIntroAnimation
+
+        const bagTwoOutroAnim = new BABYLON.Animation(
+          "bagTwoOutroAnim",
+          "position.x",
+          frameRate,
+          BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+          BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+        );
+
+        let bagTwoOutroAnimKeys = [];
+
+        bagTwoOutroAnimKeys.push({
+          frame: 0,
+          value: -5,
+        });
+
+        bagTwoOutroAnimKeys.push({
+          frame: 2 * frameRate,
+          value: -10,
+        });
+
+        bagTwoOutroAnim.setKeys(bagTwoOutroAnimKeys);
+
+        bagTwo.animations.push(bagTwoOutroAnim);
+        scene.beginAnimation(bagTwo, 0, 2 * frameRate, true);
+
+        /// ********* bagThreeIntroAnimation
+
+        const bagThreeOutroAnim = new BABYLON.Animation(
+          "bagThreeIntroAnim",
+          "position.x",
+          frameRate,
+          BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+          BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+        );
+
+        let bagThreeOutroAnimKeys = [];
+
+        bagThreeOutroAnimKeys.push({
+          frame: 0,
+          value: 5,
+        });
+
+        bagThreeOutroAnimKeys.push({
+          frame: 2 * frameRate,
+          value: 10,
+        });
+
+        bagThreeOutroAnim.setKeys(bagThreeOutroAnimKeys);
+
+        bagThree.animations.push(bagThreeOutroAnim);
+
+        scene.beginAnimation(bagThree, 0, 2 * frameRate, true);
+
+        /// ********* bagFourIntroAnimation
+
+        const bagFourOutroAnim = new BABYLON.Animation(
+          "bagFourOutroAnim",
+          "position.x",
+          frameRate,
+          BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+          BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+        );
+
+        let bagFourOutroAnimKeys = [];
+
+        bagFourOutroAnimKeys.push({
+          frame: 0,
+          value: -10,
+        });
+
+        bagFourOutroAnimKeys.push({
+          frame: 2 * frameRate,
+          value: -20,
+        });
+
+        bagFourOutroAnim.setKeys(bagFourOutroAnimKeys);
+
+        bagFour.animations.push(bagFourOutroAnim);
+
+        scene.beginAnimation(bagFour, 0, 2 * frameRate, true);
+
+        /// ********* bagFiveIntroAnimation
+
+        const bagFiveOutroAnim = new BABYLON.Animation(
+          "bagFiveOutroAnim",
+          "position.x",
+          frameRate,
+          BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+          BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+        );
+
+        let bagFiveOutroAnimKeys = [];
+
+        bagFiveOutroAnimKeys.push({
+          frame: 0,
+          value: 10,
+        });
+
+        bagFiveOutroAnimKeys.push({
+          frame: 2 * frameRate,
+          value: 20,
+        });
+
+        bagFiveOutroAnim.setKeys(bagFiveOutroAnimKeys);
+
+        bagFive.animations.push(bagFiveOutroAnim);
+
+        scene.beginAnimation(bagFive, 0, 2 * frameRate, true);
+      };
+
+      //******* RAYCASTING
+
+      //LightTorch
+
+      let torchLight = new BABYLON.PointLight("DirectionalLight", scene);
+      torchLight.scaling = new BABYLON.Vector3(5, 5, 5);
+
+      var bagHover = new BABYLON.Sound(
+        "bagHover",
+        "./int_one/bag_hover.mp3",
+        scene
+      );
+
+      var bagSelect = new BABYLON.Sound(
+        "bagSelect",
+        "./int_one/bag_pick.mp3",
+        scene
+      );
+
+      let bagOneHover = 0,
+        bagTwoHover = 0,
+        bagThreeHover = 0,
+        bagFourHover = 0,
+        bagFiveHover = 0;
+
+
+        
+      setInterval(() => {
+        let pickResult = scene.pick(scene.pointerX, scene.pointerY);
+        //If LightTorce is On
+        //If Bag One Pointed
+
+        if (pickResult) {
+          //BagOne
+          if (pickResult.pickedMesh.id == "bagOne") {
+            torchLight.position = new BABYLON.Vector3(0, 0, 1);
+            torchLight.setEnabled(true);
+            torchLight.intensity = 0.7;
+            bagOne.scaling = new BABYLON.Vector3(4.5, 4.5, 4.5);
+
+            bagOneHover += 1;
+
+            console.log(bagOneHover);
+
+            if (bagOneHover == 1) {
+              bagHover.play();
+            }
+
+            console.log("Bag One");
+          } else if (pickResult.pickedMesh.id == "bagTwo") {
+            torchLight.position = new BABYLON.Vector3(-5, 0, 1);
+            torchLight.setEnabled(true);
+            torchLight.intensity = 0.7;
+            bagTwo.scaling = new BABYLON.Vector3(4.5, 4.5, 4.5);
+
+            bagTwoHover += 1;
+
+            console.log(bagTwoHover);
+
+            if (bagTwoHover == 1) {
+              bagHover.play();
+            }
+
+            console.log("Bag Two");
+            //others
+          } else if (pickResult.pickedMesh.id == "bagThree") {
+            torchLight.position = new BABYLON.Vector3(5, 0, 1);
+            torchLight.setEnabled(true);
+            torchLight.intensity = 0.7;
+            bagThree.scaling = new BABYLON.Vector3(4.5, 4.5, 4.5);
+
+            bagThreeHover += 1;
+
+            console.log(bagThreeHover);
+
+            if (bagThreeHover == 1) {
+              bagHover.play();
+            }
+
+            console.log("Bag Three");
+            //others
+          } else if (pickResult.pickedMesh.id == "bagFour") {
+            torchLight.position = new BABYLON.Vector3(-10, 0, 1);
+            torchLight.setEnabled(true);
+            torchLight.intensity = 0.7;
+            bagFour.scaling = new BABYLON.Vector3(4.5, 4.5, 4.5);
+
+            bagFourHover += 1;
+
+            console.log(bagFourHover);
+
+            if (bagFourHover == 1) {
+              bagHover.play();
+            }
+
+            console.log("Bag FOur");
+            //others
+          } else if (pickResult.pickedMesh.id == "bagFive") {
+            torchLight.position = new BABYLON.Vector3(10, 0, 1);
+            torchLight.setEnabled(true);
+            torchLight.intensity = 0.7;
+            bagFive.scaling = new BABYLON.Vector3(4.5, 4.5, 4.5);
+
+            bagFiveHover += 1;
+
+            console.log(bagFiveHover);
+
+            if (bagFiveHover == 1) {
+              bagHover.play();
+            }
+
+            console.log("Bag Five");
+            //others
+          } else {
+            torchLight.setEnabled(false);
+
+            (bagOneHover = 0),
+              (bagTwoHover = 0),
+              (bagThreeHover = 0),
+              (bagFourHover = 0),
+              (bagFiveHover = 0);
+            bagOne.scaling = new BABYLON.Vector3(3, 3, 3);
+            bagTwo.scaling = new BABYLON.Vector3(3, 3, 3);
+            bagThree.scaling = new BABYLON.Vector3(3, 3, 3);
+            bagFour.scaling = new BABYLON.Vector3(3, 3, 3);
+            bagFive.scaling = new BABYLON.Vector3(3, 3, 3);
+          }
+        }
+      }, 1000 / 60);
+
+      // Bag Pick
+
+      window.addEventListener("click", () => {
+        let pickResult = scene.pick(scene.pointerX, scene.pointerY);
+
+        if (pickResult && pickResult.pickedMesh.id !== "helperSphere") {
+
+
+          if(pickResult.pickedMesh.id == 'bagOne'){
+            localStorage.setItem("aog_bag", './int_one/bag1.png');
+          }
+          else if(pickResult.pickedMesh.id == 'bagTwo'){
+            localStorage.setItem("aog_bag", './int_one/bag2.png');
+          }
+          else if(pickResult.pickedMesh.id == 'bagThree'){
+            localStorage.setItem("aog_bag", './int_one/bag3.png');
+          }
+          else if(pickResult.pickedMesh.id == 'bagFour'){
+            localStorage.setItem("aog_bag", './int_one/bag4.png');
+          }
+          else if(pickResult.pickedMesh.id == 'bagFive'){
+            localStorage.setItem("aog_bag", './int_one/bag5.png');
+          }
+         
+
+
+
+          bagSelect.play();
+          bagsOutroAnimation();
+          setTimeout(() => {
+            window.location.href = "http://localhost:3000/2";
+          }, 1200);
+        }
+      });
+
+
+
+
+
+      // firebgMat
+      let firebgMat = new BABYLON.StandardMaterial("firebgMat", scene);
+      firebgMat.diffuseTexture = new BABYLON.Texture(
+        "./background.jpeg",
+        scene
+      );
+      firebgMat.diffuseTexture.hasAlpha = true;
+
+      //firebgMesh
+
+      let firebg = BABYLON.MeshBuilder.CreatePlane("firebg", {}, scene);
+
+      firebg.position = new BABYLON.Vector3(4.5, 0, -2);
+      firebg.scaling = new BABYLON.Vector3(50, 25, 1);
+      firebg.rotation = new BABYLON.Vector3(3.141, 0, 9.43);
+      firebg.emissiveColor = new BABYLON.Color3(1, 1, 1);
+      firebg.material = firebgMat;
+
+
+        // GUI
+        var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        var textblock = new BABYLON.GUI.TextBlock();
+        textblock.text = "Choose a Bag";
+        textblock.fontSize = 30;
+        textblock.top = -400;
+        textblock.color = "white";
+        textblock.scaleX = 2
+        textblock.scaleY = 2
+        advancedTexture.addControl(textblock);
+
+
+      return scene;
+    };
+
+    // ***** START FRAMES
+
+    let scene = createScene(); //Call the createScene function
+
+    // Register a render loop to repeatedly render the scene
+    engine.runRenderLoop(function () {
+      
+      scene.render();
+    });
+
+    // Watch for browser/canvas resize events
+    window.addEventListener("resize", function () {
+      engine.resize();
+    });
+  </script>
+</html>

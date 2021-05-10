@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Stick&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/index.css" />
+
+    <title>4 - Mushrooms</title>
+  </head>
+
+  <body>
+    <!--touch-action="none" for best results from PEP-->
+    <canvas id="renderCanvas" touch-action="none"> </canvas>
+  </body>
+
+  <!-- Load Up Babylon -->
+  <script src="/babylon.js"></script>
+  <script src="/babylonjs.loaders.min.js"></script>
+
+  <script src="/cannon.js"></script>
+  <script src="/pep.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.2/socket.io.js"></script>
+  <script>
+    //  ******  BABYLON JS
+
+    let canvas = document.getElementById("renderCanvas"); // Get the canvas element
+
+    let engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine
+
+    let createScene = () => {
+      let scene = new BABYLON.Scene(engine);
+
+      // ***** AUDIO
+      var music = new BABYLON.Sound(
+        "Music",
+        "./int_three/int_three_theme.wav",
+        scene,
+        null,
+        {
+          loop: true,
+          autoplay: true,
+        }
+      );
+
+
+      var mushroomClick = new BABYLON.Sound(
+        "mushrromClick",
+        "./int_four/mushroom_pick.mp3",
+        scene
+      );
+
+      mushroomClick.setVolume(.010)
+
+
+      scene.collisionsEnabled = true;
+
+
+      //  ******  C A M E R A
+
+      let camera;
+
+      camera = new BABYLON.FreeCamera(
+        "UniversalCamera",
+        new BABYLON.Vector3(0, 0, 20),
+        scene
+      );
+      camera.panningSensibility = 0;
+
+      // Enable Collisions
+      scene.collisionsEnabled = true;
+
+      // camera.attachControl(canvas, true);
+
+      camera.setTarget(new BABYLON.Vector3(0, 0, 0));
+
+      //  ******  L I G H T S
+
+      //Directional Light
+      var light = new BABYLON.HemisphericLight(
+        "DirectionalLight",
+        new BABYLON.Vector3(0, -1, 0),
+        scene
+      );
+      light.diffuse = new BABYLON.Color3(1, 1, 1);
+      light.specular = new BABYLON.Color3(0, 1, 0);
+
+      light.intensity = 1.8;
+
+      //  ******  S K Y B O X
+      /*
+             var skybox = BABYLON.MeshBuilder.CreateBox("skyBox", { size: 2000.0 }, scene)
+             var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene)
+             skyboxMaterial.backFaceCulling = false;
+             skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture(
+               "./skybox/skybox",
+               scene
+             )
+             skyboxMaterial.reflectionTexture.coordinatesMode =
+               BABYLON.Texture.SKYBOX_MODE;
+             skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0)
+             skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0)
+             skybox.material = skyboxMaterial;
+
+             skybox.rotation.y = -500;
+           */
+      // ****** P H Y S I C S
+
+      var gravityVector = new BABYLON.Vector3(0, -9.81, 0);
+      var physicsPlugin = new BABYLON.CannonJSPlugin();
+      scene.enablePhysics(gravityVector, physicsPlugin);
+
+      // ****** M E S H E S
+
+      //forest
+
+      //Forest Material
+      let forestMat = new BABYLON.StandardMaterial("forestMat", scene);
+      forestMat.diffuseTexture = new BABYLON.Texture(
+        "./int_four/forest.jpg",
+        scene
+      );
+
+      let forest = BABYLON.MeshBuilder.CreatePlane("forest", {}, scene);
+
+      forest.position = new BABYLON.Vector3(0, 0, 0);
+      forest.scaling = new BABYLON.Vector3(38, 38, 38);
+      forest.rotation = new BABYLON.Vector3(3.141, 0, 0);
+      forest.material = forestMat;
+
+      // mushroom
+
+      //Mushroom Material
+      let mushroomMat = new BABYLON.StandardMaterial("mushroomMat", scene);
+      mushroomMat.diffuseTexture = new BABYLON.Texture(
+        "./int_four/mushroom.png",
+        scene
+      );
+
+      mushroomMat.diffuseTexture.hasAlpha = true;
+
+      let mushroom = BABYLON.MeshBuilder.CreatePlane("mushroom", {}, scene);
+
+      mushroom.position = new BABYLON.Vector3(-12, -6.3, 2);
+      mushroom.scaling = new BABYLON.Vector3(0.1, 0.1, 0.1);
+      mushroom.rotation = new BABYLON.Vector3(3.141, 0, 9.5);
+      mushroom.material = mushroomMat;
+      mushroom.material.alpha =1
+
+      let mushroom2 = BABYLON.MeshBuilder.CreatePlane("mushroom", {}, scene);
+
+      mushroom2.position = new BABYLON.Vector3(4.5, -5.2, 2);
+      mushroom2.scaling = new BABYLON.Vector3(0.8, 0.8, 0.8);
+      mushroom2.rotation = new BABYLON.Vector3(3.141, 0, 9.5);
+      mushroom2.material = mushroomMat;
+
+      // Mushrrom Outline
+
+      //Mushroom Material
+      let mushroomOutlineMat = new BABYLON.StandardMaterial(
+        "mushroomMat",
+        scene
+      );
+      mushroomOutlineMat.diffuseTexture = new BABYLON.Texture(
+        "./int_four/mushroomOutline.png",
+        scene
+      );
+
+      mushroomOutlineMat.diffuseTexture.hasAlpha = true;
+
+      let mushroomOutlined = BABYLON.MeshBuilder.CreatePlane(
+        "mushroomOutlined",
+        {},
+        scene
+      );
+
+      mushroomOutlined.position = new BABYLON.Vector3(-12, -6.3, 2);
+      mushroomOutlined.scaling = new BABYLON.Vector3(1.2, 1.2, 1.2);
+      mushroomOutlined.rotation = new BABYLON.Vector3(3.141, 0, 9.5);
+      mushroomOutlined.material = mushroomOutlineMat;
+
+      let mushroomOutlined2 = BABYLON.MeshBuilder.CreatePlane(
+        "mushroomOutlined2",
+        {},
+        scene
+      );
+
+      mushroomOutlined2.position = new BABYLON.Vector3(4.5, -5.2, 2);
+      mushroomOutlined2.scaling = new BABYLON.Vector3(1.2, 1.2, 1.2);
+      mushroomOutlined2.rotation = new BABYLON.Vector3(3.141, 0, 9.5);
+      mushroomOutlined2.material = mushroomOutlineMat;
+
+      mushroomOutlined.setEnabled(false);
+      mushroomOutlined2.setEnabled(false);
+
+      //magnifyingGlass
+
+      BABYLON.SceneLoader.ImportMesh(
+        "",
+        "./int_four/",
+        "mgGlass.glb",
+        scene,
+        function (newMeshes, particleSystems, skeletons, animationGroups) {
+          let mgGlass = newMeshes[0];
+
+          mgGlass.scaling = new BABYLON.Vector3(0.4, 0.4, 0.4);
+          mgGlass.rotation = new BABYLON.Vector3(0, 0, 1.3);
+
+          // our render target texture
+          var renderTarget = new BABYLON.RenderTargetTexture(
+            "depth",
+            1024,
+            scene,
+            true
+          );
+          scene.customRenderTargets.push(renderTarget);
+
+          const disc = BABYLON.Mesh.CreateDisc("disc", 0.25, 64, scene);
+
+          disc.scaling = new BABYLON.Vector3(3.8, 3.8, 1);
+          disc.rotation = new BABYLON.Vector3(3.141, 0, 0);
+          disc.position.z = 3
+          // Main material
+          var mainMaterial = new BABYLON.PBRMaterial("pbr", scene);
+          disc.material = mainMaterial;
+
+          mainMaterial.metallic = 0.0;
+          mainMaterial.roughness = 0;
+
+          var refractionTexture = new BABYLON.RefractionTexture(
+            "th",
+            1024,
+            scene
+          );
+          refractionTexture.renderList.push(forest);
+          refractionTexture.renderList.push(mushroom);
+          refractionTexture.renderList.push(mushroom2);
+          refractionTexture.renderList.push(mushroomOutlined);
+          refractionTexture.renderList.push(mushroomOutlined2);
+          refractionTexture.refractionPlane = new BABYLON.Plane(0, 0, -8, -2);
+          refractionTexture.depth = -2;
+
+          mainMaterial.refractionTexture = refractionTexture;
+          mainMaterial.indexOfRefraction = 0;
+
+          let foundMushrooms = [];
+
+        
+
+
+
+          setInterval(() => {
+
+            //console.log(foundMushrooms.length)
+            if(foundMushrooms.includes("mushroom1", 0) && foundMushrooms.includes("mushroom2", 0)){
+                setTimeout(() => {
+              window.location.href = "http://localhost:3000/5";
+            }, 1000);
+            }
+            // Hover Pick Result
+            let pickResult = scene.pick(scene.pointerX, scene.pointerY);
+
+            //MgGlass Model Follow Cursor
+            mgGlass.position.x = pickResult.pickedPoint.x;
+            mgGlass.position.y = pickResult.pickedPoint.y ;
+            mgGlass.position.z = 3;
+
+            // Disc FollowMgGlass
+            disc.position.x = pickResult.pickedPoint.x;
+            disc.position.y = pickResult.pickedPoint.y ;
+
+            // Create a particle system
+            const particleSystem = new BABYLON.ParticleSystem("particles", 2);
+
+            //Texture of each particle
+            particleSystem.particleTexture = new BABYLON.Texture(
+              "./int_three/flare.png"
+            );
+
+            function castRay() {
+              var ray = new BABYLON.Ray(
+                new BABYLON.Vector3(
+                  pickResult.pickedPoint.x,
+                  pickResult.pickedPoint.y,
+                  2
+                ),
+                new BABYLON.Vector3(0, 0, -1),
+                100
+              );
+
+              var hit = scene.pickWithRay(ray);
+
+              if (hit.pickedMesh) {
+               
+               
+/////////////for mushroom 2 highlight
+                if (
+                  hit.pickedPoint.x < -11 &&
+                  hit.pickedPoint.x > -12 &&
+                  hit.pickedPoint.y < -5 &&
+                  hit.pickedPoint.y > -6
+                ) {
+				console.log(hit.pickedPoint.x);
+				console.log(hit.pickedPoint.y);
+                  mushroom.scaling = new BABYLON.Vector3(1.2, 1.2, 1.2);
+                  mushroomOutlined.setEnabled(true);
+                  // Position where the particles are emiited from
+                  particleSystem.emitter = new BABYLON.Vector3(
+                    mushroom.position.x + 2,
+                    mushroom.position.y ,
+                    5
+                  );
+                  particleSystem.minSize = 0.1;
+                  particleSystem.maxSize = 0.1;
+
+                  particleSystem.start();
+                  setTimeout(() => {
+                    particleSystem.stop();
+                  }, 200);
+
+                  window.addEventListener('click',()=>{
+                      foundMushrooms.push('mushroom1');
+                      mushroom.setEnabled(false)
+                      mushroomClick.play();
+                  })
+
+
+                } else {
+                  mushroom.scaling = new BABYLON.Vector3(0.7, 0.7, 0.7);
+                  mushroomOutlined.setEnabled(false);
+                }
+
+////////////for mushroom 1 highlight
+
+                if (
+                  hit.pickedPoint.x < 5 &&
+                  hit.pickedPoint.x > 2.9 &&
+                  hit.pickedPoint.y < -3.7 &&
+                  hit.pickedPoint.y > -5
+                ) {
+                  mushroom2.scaling = new BABYLON.Vector3(1.2, 1.2, 1.2);
+                  mushroomOutlined2.setEnabled(true);
+
+                  // Position where the particles are emiited from
+                  particleSystem.emitter = new BABYLON.Vector3(
+                    mushroom2.position.x - 1,
+                    mushroom2.position.y + 1,
+                    5
+                  );
+                  particleSystem.minSize = 0.1;
+                  particleSystem.maxSize = 0.1;
+
+                  particleSystem.start();
+                  setTimeout(() => {
+                    particleSystem.stop();
+                  }, 200);
+
+                  window.addEventListener('click',()=>{
+                      foundMushrooms.push('mushroom2');
+                      mushroom2.setEnabled(false)
+                      mushroomClick.play();
+                  })
+                } else {
+				
+                  mushroom2.scaling = new BABYLON.Vector3(0.7, 0.7, 0.7);
+                  mushroomOutlined2.setEnabled(false);
+                  
+                }
+              }
+            }
+
+            castRay();
+          }, 1000 / 60);
+
+
+
+
+
+
+        }
+      );
+
+      
+
+      return scene;
+    };
+
+    // ***** START FRAMES
+
+    let scene = createScene(); //Call the createScene function
+
+    // Register a render loop to repeatedly render the scene
+    engine.runRenderLoop(function () {
+      scene.render();
+    });
+
+    // Watch for browser/canvas resize events
+    window.addEventListener("resize", function () {
+      engine.resize();
+    });
+  </script>
+</html>

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Stick&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/index.css" />
+
+    <title>5 - Would You Rather</title>
+  </head>
+
+  <body>
+    <!--touch-action="none" for best results from PEP-->
+    <canvas id="renderCanvas" touch-action="none"> </canvas>
+  </body>
+
+  <!-- Load Up Babylon -->
+  <script src="/babylon.js"></script>
+  
+  <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+  
+  <script src="/babylonjs.loaders.min.js"></script>
+
+  <script src="/cannon.js"></script>
+  <script src="/pep.js"></script>
+
+  <script src="/meshwriter.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.2/socket.io.js"></script>
+  <script>
+    //  ******  BABYLON JS
+
+    let canvas = document.getElementById("renderCanvas"); // Get the canvas element
+
+    let engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine
+
+    let currQuestionCount;
+
+    currQuestionCount = 1;
+
+    let createScene = () => {
+
+
+
+      let scene = new BABYLON.Scene(engine);
+
+      // Theme Sound
+      let music = new BABYLON.Sound(
+        "Music",
+        "./int_five/int_five_theme.wav",
+        scene,
+        null,
+        {
+          loop: true,
+          autoplay: true,
+        }
+      );
+
+
+      var ratherClick = new BABYLON.Sound(
+        "ratherClick",
+        "./int_five/rather_click.mp3",
+        scene
+      );
+
+
+      ratherClick.setVolume(1)
+
+      let camera;
+
+      //  ******  C A M E R A
+
+      camera = new BABYLON.UniversalCamera(
+        "UniversalCamera",
+        new BABYLON.Vector3(0, 0, 20),
+        scene
+      );
+
+      // camera.attachControl(canvas, true);
+
+      camera.setTarget(new BABYLON.Vector3(0, 0, 0));
+
+      //  ******  L I G H T S
+
+      let light = new BABYLON.HemisphericLight(
+        "HemiLight",
+        new BABYLON.Vector3(0, 1, 0),
+        scene
+      );
+      light.diffuse = new BABYLON.Color3(1, 1, 1);
+      //light.specular = new BABYLON.Color3(1, 1, 1);
+
+      light.intensity = 1.4;
+
+      //  ******  S K Y B O X
+
+      // Skybox
+      let skybox = BABYLON.MeshBuilder.CreateBox(
+        "skyBox",
+        { size: 1000.0 },
+        scene
+      );
+      let skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
+      skyboxMaterial.backFaceCulling = false;
+      skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture(
+        "./int_five/skybox/skybox",
+        scene
+      );
+      skyboxMaterial.reflectionTexture.coordinatesMode =
+        BABYLON.Texture.SKYBOX_MODE;
+      skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+      skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+      skybox.material = skyboxMaterial;
+
+      scene.beforeRender = function () {
+        skybox.rotate(BABYLON.Axis.Y, 0.0004, BABYLON.Space.WORLD);
+      };
+
+      // ****** P H Y S I C S
+
+      let gravityVector = new BABYLON.Vector3(0, -9.81, 0);
+      let physicsPlugin = new BABYLON.CannonJSPlugin();
+      scene.enablePhysics(gravityVector, physicsPlugin);
+
+      // Questions
+
+      let questionsAsked = 0;
+
+      let questions = [
+        {
+          left: "Eat Irresponsibly Farmed Meat Every Day?",
+          right: "Eat Responsibly Farmed Meat Once a Week?",
+        },
+        {
+          left: "Sit in a Park with a Snake?",
+          right: "Sit in a Park with no Trees?",
+        },
+        {
+          left: "Be on a Plane for 1 Hour?",
+          right: "Be on a Train for 4 Hours",
+        },
+        {
+          left: "Have Something That Nobody Has?",
+          right: "Have Something Everybody Has?",
+        },
+        {
+          left: "Be Lonely and Rich?",
+          right: "Be Poor but Surrounded \n by Friends?",
+        },
+        { left: "Run in Smog?", right: "Swim in Polluted Water?" },
+      ];
+
+      let currQuestionLeft;
+
+      let currQuestionRight;
+
+      // ****** M E S H E S
+
+      // HelperSphere
+
+      //HelperSphereMaterial
+      let helperSphereMat = new BABYLON.StandardMaterial(
+        "helperSphereMat",
+        scene
+      );
+
+      helperSphereMat.alpha = 0.1;
+
+      //HelperSphere
+
+      let helperSphere = BABYLON.MeshBuilder.CreateSphere(
+        "helperSphere",
+        {},
+        scene
+      );
+
+      helperSphere.position = new BABYLON.Vector3(0, 0, 0);
+      helperSphere.scaling = new BABYLON.Vector3(80, 80, 80);
+      helperSphere.rotation = new BABYLON.Vector3(0, 0, 0);
+      helperSphere.material = helperSphereMat;
+
+      //dubai
+
+      //Dubai Material
+      let dubaiMat = new BABYLON.StandardMaterial("dubaiMat", scene);
+      dubaiMat.diffuseTexture = new BABYLON.Texture(
+        "./int_five/dubai.png",
+        scene
+      );
+
+      let dubai = BABYLON.MeshBuilder.CreatePlane("dubai", {}, scene);
+
+      dubaiMat.diffuseTexture.hasAlpha = true;
+
+      dubai.position = new BABYLON.Vector3(0, 2, 0);
+      dubai.scaling = new BABYLON.Vector3(40, 22, 30);
+      dubai.rotation = new BABYLON.Vector3(3.141, 0, 9.42);
+      dubai.material = dubaiMat;
+
+      // Question Planes
+
+      let mainMaterial = new BABYLON.StandardMaterial("pbr", scene);
+
+      mainMaterial.alpha = 0.5;
+
+      let mainMaterial2 = new BABYLON.StandardMaterial("pbr", scene);
+
+      mainMaterial2.alpha = 0.5;
+
+      let questionLeft = BABYLON.MeshBuilder.CreatePlane(
+        "questionLeft",
+        {},
+        scene
+      );
+
+      questionLeft.position = new BABYLON.Vector3(10, 2, 3);
+      questionLeft.scaling = new BABYLON.Vector3(10, 2.5, 10);
+      questionLeft.rotation = new BABYLON.Vector3(3.141, 0, 9.42);
+
+      questionLeft.material = mainMaterial;
+
+      let questionRight = BABYLON.MeshBuilder.CreatePlane(
+        "questionRight",
+        {},
+        scene
+      );
+
+      questionRight.position = new BABYLON.Vector3(-10, 2, 3);
+      questionRight.scaling = new BABYLON.Vector3(10, 2.5, 10);
+      questionRight.rotation = new BABYLON.Vector3(3.141, 0, 9.42);
+
+      questionRight.material = mainMaterial2;
+
+      // Questions Text
+      //Create dynamic texture
+      let dynaTextRes = 512;
+      let font = "bold 45px arial";
+
+      let dynaText = new BABYLON.DynamicTexture(
+        "dynamic texture",
+        { width: 10 * 120, height: 2.5 * 120 },
+        scene
+      );
+      let dynaTextContext = dynaText.getContext();
+
+      mainMaterial.diffuseTexture = dynaText;
+
+      dynaText.drawText(
+        currQuestionLeft,
+        220,
+        150,
+        font,
+        "blue",
+        "white",
+        true,
+        true
+      );
+
+      var dynaText2 = new BABYLON.DynamicTexture(
+        "dynamic texture",
+        { width: 10 * 120, height: 2.5 * 120 },
+        scene
+      );
+      var dynaTextContext2 = dynaText2.getContext();
+
+      mainMaterial2.diffuseTexture = dynaText2;
+
+      dynaText2.drawText(
+        currQuestionRight,
+        50,
+        150,
+        font,
+        "blue",
+        "white",
+        true,
+        true
+      );
+
+      function myLoop() {
+        //  create a loop function
+        if (currQuestionCount == 1) {
+          currQuestionLeft = questions[0].left;
+          currQuestionRight = questions[0].right;
+
+          dynaText.drawText(
+            currQuestionLeft,
+            250,
+            150,
+            font,
+            "blue",
+            "white",
+            true,
+            true
+          );
+
+          dynaText2.drawText(
+            currQuestionRight,
+            50,
+            150,
+            font,
+            "blue",
+            "white",
+            true,
+            true
+          );
+        } else if (currQuestionCount == 2) {
+          currQuestionLeft = questions[1].left;
+          currQuestionRight = questions[1].right;
+        } else if (currQuestionCount == 3) {
+          currQuestionLeft = questions[2].left;
+          currQuestionRight = questions[2].right;
+        } else if (currQuestionCount == 4) {
+          currQuestionLeft = questions[3].left;
+          currQuestionRight = questions[3].right;
+        } else if (currQuestionCount == 5) {
+          currQuestionLeft = questions[4].left;
+          currQuestionRight = questions[4].right;
+        } else if (currQuestionCount == 6) {
+          currQuestionLeft = questions[5].left;
+          currQuestionRight = questions[5].right;
+        }
+        setTimeout(function () {
+          //  call a 3s setTimeout when the loop is called
+          console.log(currQuestionCount);
+
+          dynaText.drawText(
+            currQuestionLeft,
+            250,
+            150,
+            font,
+            "blue",
+            "white",
+            true,
+            true
+          );
+
+          dynaText2.drawText(
+            currQuestionRight,
+            50,
+            150,
+            font,
+            "blue",
+            "white",
+            true,
+            true
+          );
+
+          currQuestionCount+=1;
+          questionTimer = 20
+
+          questionLeft.setEnabled(true)
+          questionRight.setEnabled(true)
+          if (currQuestionCount < 8) {
+            myLoop();
+          }
+
+          else{
+            setTimeout(() => {
+              window.location.href = "http://localhost:3000/6";
+            }, 1000);
+          }
+
+          
+        }, 20000);
+      }
+
+  
+
+
+
+
+      window.addEventListener('click',()=>{
+        let pickResult = scene.pick(scene.pointerX, scene.pointerY);
+
+        if(pickResult.pickedMesh.id == "questionLeft" || pickResult.pickedMesh.id == "questionRight"){
+            questionLeft.setEnabled(false)
+            questionRight.setEnabled(false)
+
+            ratherClick.play()
+
+
+        }
+      })
+
+
+
+      
+        // GUI
+        var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        var textblock = new BABYLON.GUI.TextBlock();
+        textblock.text = "Would You Rather?";
+        textblock.fontSize = 30;
+        textblock.top = -400;
+        textblock.color = "white";
+        textblock.scaleX = 2
+        textblock.scaleY = 2
+        advancedTexture.addControl(textblock);
+
+
+        var countblock = new BABYLON.GUI.TextBlock();
+        
+        countblock.fontSize = 35;
+        countblock.top = -300;
+        countblock.color = "white";
+        countblock.scaleX = 2
+        countblock.scaleY = 2
+        advancedTexture.addControl(countblock);
+
+
+        let questionTimer = 20
+
+setTimeout(() => {
+  myLoop();
+
+  setInterval(() => {
+      questionTimer -=1;
+      countblock.text = ""+questionTimer+"";
+  }, 1000);
+  
+    
+}, 500);
+
+
+        
+
+
+      return scene;
+    };
+
+    // ***** START FRAMES
+
+    let scene = createScene(); //Call the createScene function
+
+    // Register a render loop to repeatedly render the scene
+    engine.runRenderLoop(function () {
+      scene.render();
+    });
+
+    // Watch for browser/canvas resize events
+    window.addEventListener("resize", function () {
+      engine.resize();
+    });
+  </script>
+</html>

@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Stick&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/index.css" />
+
+    <title>6 - House on Fire</title>
+  </head>
+
+  <body>
+    <!--touch-action="none" for best results from PEP-->
+    <canvas id="renderCanvas" touch-action="none"> </canvas>
+  </body>
+
+  <!-- Load Up Babylon -->
+  <!-- Babylon.js -->
+  <script src="/babylon.js"></script>
+  <script src="/babylonjs.loaders.min.js"></script>
+
+  <script src="/cannon.js"></script>
+  <script src="/pep.js"></script>
+
+  <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+
+  <script>
+    //  ******  BABYLON JS
+
+    let canvas = document.getElementById("renderCanvas"); // Get the canvas element
+
+    let engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine
+
+    let createScene = () => {
+      let scene = new BABYLON.Scene(engine);
+
+      // ***** AUDIO
+      let music = new BABYLON.Sound(
+        "Music",
+        "./int_six/int_six_theme.wav",
+        scene,
+        null,
+        {
+          loop: true,
+          autoplay: true,
+        }
+      );
+
+      scene.collisionsEnabled = true;
+
+      let bagHover = new BABYLON.Sound(
+        "bagHover",
+        "./int_one/bag_hover.mp3",
+        scene
+      );
+
+      //  ******  C A M E R A
+
+      let camera;
+
+      camera = new BABYLON.FreeCamera(
+        "UniversalCamera",
+        new BABYLON.Vector3(0, 0, 20),
+        scene
+      );
+      //camera.panningSensibility = 0;
+
+      // camera.attachControl(canvas, true);
+
+      camera.setTarget(new BABYLON.Vector3(0, 0, 0));
+      camera.minZ = 0.001;
+
+      //  ******  L I G H T S
+
+      //Directional Light
+      let light = new BABYLON.DirectionalLight(
+        "DirectionalLight",
+        new BABYLON.Vector3(0, 0, -1),
+        scene
+      );
+      light.diffuse = new BABYLON.Color3(1, 1, 1);
+      // light.specular = new BABYLON.Color3(1, 1, 1);
+
+      light.intensity = 0.7;
+
+      //  ******  S K Y B O X
+      /*
+      let skybox = BABYLON.MeshBuilder.CreateBox("skyBox", { size: 2000.0 }, scene)
+      let skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene)
+      skyboxMaterial.backFaceCulling = false;
+      skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture(
+        "./skybox/skybox",
+        scene
+      )
+      skyboxMaterial.reflectionTexture.coordinatesMode =
+        BABYLON.Texture.SKYBOX_MODE;
+      skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0)
+      skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0)
+      skybox.material = skyboxMaterial;
+
+      skybox.rotation.y = -500;
+    */
+      // ****** P H Y S I C S
+
+      let gravityVector = new BABYLON.Vector3(0, -9.81, 0);
+      let physicsPlugin = new BABYLON.CannonJSPlugin();
+      scene.enablePhysics(gravityVector, physicsPlugin);
+
+      // ****** M E S H E S
+
+
+      //***** Meshes
+
+      // House
+
+      // houseMat
+      let houseMat = new BABYLON.StandardMaterial("houseMat", scene);
+      houseMat.diffuseTexture = new BABYLON.Texture(
+        "./int_six/house.png",
+        scene
+      );
+      houseMat.diffuseTexture.hasAlpha = true;
+
+      //houseMesh
+
+      let house = BABYLON.MeshBuilder.CreatePlane("house", {}, scene);
+
+      house.position = new BABYLON.Vector3(5, 0, -0.4);
+      house.scaling = new BABYLON.Vector3(17, 17, 17);
+      house.rotation = new BABYLON.Vector3(3.141, 0, 9.43);
+      house.material = houseMat;
+
+      // firebgMat
+      let firebgMat = new BABYLON.StandardMaterial("firebgMat", scene);
+      firebgMat.diffuseTexture = new BABYLON.Texture(
+        "./background.jpeg",
+        scene
+      );
+      firebgMat.diffuseTexture.hasAlpha = true;
+
+      //firebgMesh
+
+      let firebg = BABYLON.MeshBuilder.CreatePlane("firebg", {}, scene);
+
+      firebg.position = new BABYLON.Vector3(4.5, 0, -2);
+      firebg.scaling = new BABYLON.Vector3(50, 25, 1);
+      firebg.rotation = new BABYLON.Vector3(3.141, 0, 9.43);
+      firebg.emissiveColor = new BABYLON.Color3(1, 1, 1);
+      firebg.material = firebgMat;
+
+      //smoke
+
+      let child = new BABYLON.TransformNode();
+      child.parent = house;
+      child.position.y = -0.2;
+
+      // Emitter object
+      let emitter = new BABYLON.ConeParticleEmitter();
+
+      let particleSystem = new BABYLON.ParticleSystem(
+        "particles",
+        60,
+        scene,
+        null,
+        true
+      );
+      particleSystem.particleTexture = new BABYLON.Texture(
+        "./int_six/smoke_sprite.png",
+        scene,
+        true,
+        false,
+        BABYLON.Texture.TRILINEAR_SAMPLINGMODE
+      );
+
+      particleSystem.startSpriteCellID = 0;
+      particleSystem.endSpriteCellID = 31;
+      particleSystem.spriteCellHeight = 256;
+      particleSystem.spriteCellWidth = 128;
+      particleSystem.spriteCellChangeSpeed = 4;
+
+      particleSystem.minScaleX = 1.0;
+      particleSystem.minScaleY = 2.0;
+      particleSystem.maxScaleX = 1.0;
+      particleSystem.maxScaleY = 2.0;
+
+      particleSystem.addSizeGradient(0, 0.0, 0.0);
+      particleSystem.addSizeGradient(1.0, 1, 1);
+
+      particleSystem.translationPivot = new BABYLON.Vector2(0, -0.5);
+
+      // Where the particles come from
+      let radius = 0.35;
+      let angle = Math.PI;
+      let coneEmitter = new BABYLON.ConeParticleEmitter(radius, angle);
+
+      particleSystem.particleEmitterType = coneEmitter;
+      particleSystem.emitter = child;
+
+      // Life time of each particle (random between...
+      particleSystem.minLifeTime = 4.0;
+      particleSystem.maxLifeTime = 4.0;
+
+      // Color gradient over life
+      particleSystem.addColorGradient(0, new BABYLON.Color4(1, 1, 1, 0));
+      particleSystem.addColorGradient(
+        0.5,
+        new BABYLON.Color4(1, 1, 1, 70 / 255)
+      );
+      particleSystem.addColorGradient(1.0, new BABYLON.Color4(1, 1, 1, 0));
+
+      // Emission rate
+      particleSystem.emitRate = 100;
+
+      // Blend mode : BLENDMODE_ONEONE, or BLENDMODE_STANDARD
+      particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+
+      // Set the gravity of all particles
+      particleSystem.gravity = new BABYLON.Vector3(0, 0, 0);
+
+      // Speed
+      particleSystem.minEmitPower = 0;
+      particleSystem.maxEmitPower = 0;
+      particleSystem.updateSpeed = 1 / 60;
+
+      // Start the particle system
+      particleSystem.start();
+
+      //fires
+
+      let firechild = new BABYLON.TransformNode();
+      firechild.parent = house;
+      firechild.position.y = 6;
+      firechild.position.z = -6;
+
+      // Emitter object
+      let fireemitter = new BABYLON.ConeParticleEmitter();
+
+      let fireparticleSystem = new BABYLON.ParticleSystem(
+        "particles",
+        200,
+        scene,
+        null,
+        true
+      );
+      fireparticleSystem.particleTexture = new BABYLON.Texture(
+        "./int_six/fire_sprite.png",
+        scene,
+        true,
+        false,
+        BABYLON.Texture.TRILINEAR_SAMPLINGMODE
+      );
+
+      fireparticleSystem.startSpriteCellID = 0;
+      fireparticleSystem.endSpriteCellID = 31;
+      fireparticleSystem.spriteCellHeight = 256;
+      fireparticleSystem.spriteCellWidth = 128;
+      fireparticleSystem.spriteCellChangeSpeed = 4;
+
+      fireparticleSystem.minScaleX = 1;
+      fireparticleSystem.minScaleY = 2;
+
+      fireparticleSystem.maxScaleX = 1;
+      fireparticleSystem.maxScaleY = 2;
+
+      fireparticleSystem.addSizeGradient(0.00025, 0.02, 3);
+
+      fireparticleSystem.translationPivot = new BABYLON.Vector2(0, -1);
+
+      // Where the particles come from
+      let fireradius = 0.2;
+      let fireangle = Math.PI;
+      let fireconeEmitter = new BABYLON.ConeParticleEmitter(
+        fireradius,
+        fireangle
+      );
+
+      fireparticleSystem.particleEmitterType = fireconeEmitter;
+      fireparticleSystem.emitter = child;
+
+      // Life time of each particle (random between...
+      fireparticleSystem.minLifeTime = 4.0;
+      fireparticleSystem.maxLifeTime = 4.0;
+
+      // Color gradient over life
+      fireparticleSystem.addColorGradient(0, new BABYLON.Color4(1, 1, 1, 0));
+      fireparticleSystem.addColorGradient(
+        0.5,
+        new BABYLON.Color4(1, 1, 1, 70 / 255)
+      );
+      fireparticleSystem.addColorGradient(1.0, new BABYLON.Color4(1, 1, 1, 0));
+
+      // Emission rate
+      fireparticleSystem.emitRate = 10;
+
+      // Blend mode : BLENDMODE_ONEONE, or BLENDMODE_STANDARD
+      fireparticleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+
+      // Set the gravity of all particles
+      fireparticleSystem.gravity = new BABYLON.Vector3(0, 0, 0);
+
+      // Speed
+      fireparticleSystem.minEmitPower = 0;
+      fireparticleSystem.maxEmitPower = 0;
+      fireparticleSystem.updateSpeed = 1 / 60;
+
+      // Start the particle system
+      fireparticleSystem.start();
+
+      // Savebox
+
+      // saveboxMat
+      let saveboxMat = new BABYLON.StandardMaterial("saveboxMat", scene);
+      saveboxMat.diffuseTexture = new BABYLON.Texture(
+        "./int_six/savebox.png",
+        scene
+      );
+      saveboxMat.diffuseTexture.hasAlpha = true;
+
+      //saveboxMesh
+
+      let savebox = BABYLON.MeshBuilder.CreateBox("savebox", {}, scene);
+
+      savebox.position = new BABYLON.Vector3(-5.5, 0, 1);
+      savebox.scaling = new BABYLON.Vector3(12, 4, 5);
+      savebox.rotation = new BABYLON.Vector3(3.141, 0, 9.43);
+      savebox.material = saveboxMat;
+
+      // Items
+
+      // bookMat
+      let bookMat = new BABYLON.StandardMaterial("bookMat", scene);
+      bookMat.diffuseTexture = new BABYLON.Texture("./int_six/book.png", scene);
+      bookMat.diffuseTexture.hasAlpha = true;
+
+      //bookMesh
+
+      let book = BABYLON.MeshBuilder.CreatePlane("bookMesh", {}, scene);
+
+      book.position = new BABYLON.Vector3(3, 2, 0);
+      book.scaling = new BABYLON.Vector3(1.6, 1.6, 1.6);
+      book.rotation = new BABYLON.Vector3(3, 0, 9.5);
+      book.material = bookMat;
+
+      // moneyMat
+      let moneyMat = new BABYLON.StandardMaterial("moneyMat", scene);
+      moneyMat.diffuseTexture = new BABYLON.Texture(
+        "./int_six/money.png",
+        scene
+      );
+      moneyMat.diffuseTexture.hasAlpha = true;
+
+     
+
+      //mapMesh
+
+      let money = BABYLON.MeshBuilder.CreatePlane("moneyMesh", {}, scene);
+
+      money.position = new BABYLON.Vector3(7, -3, 0);
+      money.scaling = new BABYLON.Vector3(1.6, 1.6, 1.6);
+      money.rotation = new BABYLON.Vector3(3, 0, 9.5);
+      money.material = moneyMat;
+
+      // phone
+      let phoneMat = new BABYLON.StandardMaterial("phoneMat", scene);
+      phoneMat.diffuseTexture = new BABYLON.Texture(
+        "./int_six/phone.png",
+        scene
+      );
+      phoneMat.diffuseTexture.hasAlpha = true;
+
+      //phoneMesh
+
+      let phone = BABYLON.MeshBuilder.CreatePlane("phoneMesh", {}, scene);
+
+      phone.position = new BABYLON.Vector3(6, 1, 1);
+      phone.scaling = new BABYLON.Vector3(1.6, 1.6, 10);
+      phone.rotation = new BABYLON.Vector3(3.141, 0, 9.5);
+      phone.material = phoneMat;
+
+      // bike
+
+      //bikeMesh
+
+      let bike = BABYLON.MeshBuilder.CreatePlane("bikeMesh", {}, scene);
+
+      bike.position = new BABYLON.Vector3(8, -0.4, 1);
+      bike.scaling = new BABYLON.Vector3(1.6, 1.6, 1.6);
+      bike.rotation = new BABYLON.Vector3(3.141, 0, 9.5);
+
+      let bikeMat = new BABYLON.StandardMaterial("bikeMat", scene);
+      bikeMat.diffuseTexture = new BABYLON.Texture(
+        "./int_six/bicycle.png",
+        scene
+      );
+      bikeMat.diffuseTexture.hasAlpha = true;
+      bike.material = bikeMat;
+
+      // passport
+
+      //passportMesh
+
+      let passport = BABYLON.MeshBuilder.CreatePlane("passportMesh", {}, scene);
+
+      passport.position = new BABYLON.Vector3(3.5, 0, 1);
+      passport.scaling = new BABYLON.Vector3(1.6, 1.6, 1.6);
+      passport.rotation = new BABYLON.Vector3(3.141, 0, 9.5);
+
+      let passportMat = new BABYLON.StandardMaterial("passportMat", scene);
+      passportMat.diffuseTexture = new BABYLON.Texture(
+        "./int_six/passport.png",
+        scene
+      );
+      passportMat.diffuseTexture.hasAlpha = true;
+      passport.material = passportMat;
+
+      // videogames
+
+      //videogamesMesh
+
+      let videogames = BABYLON.MeshBuilder.CreatePlane(
+        "videogamesMesh",
+        {},
+        scene
+      );
+
+      videogames.position = new BABYLON.Vector3(2.5, -3, 1);
+      videogames.scaling = new BABYLON.Vector3(1.6, 1.6, 1.6);
+      videogames.rotation = new BABYLON.Vector3(3.141, 0, 9.5);
+
+      let videogamesMat = new BABYLON.StandardMaterial("videogamesMat", scene);
+      videogamesMat.diffuseTexture = new BABYLON.Texture(
+        "./int_six/videogames.png",
+        scene
+      );
+      videogamesMat.diffuseTexture.hasAlpha = true;
+      videogames.material = videogamesMat;
+
+      // Drag Behavior
+
+      let savedItems = [];
+
+
+
+        scene.onPointerDown = function (evt, pickResult) {
+        console.log(evt);
+        
+    }
+
+
+    let bookDragBehavior = new BABYLON.SixDofDragBehavior();
+      book.addBehavior(bookDragBehavior);
+      let moneyDragBehavior = new BABYLON.SixDofDragBehavior();
+money.addBehavior(moneyDragBehavior);
+
+let phoneDragBehavior = new BABYLON.SixDofDragBehavior();
+phone.addBehavior(phoneDragBehavior);
+
+let passportDragBehavior = new BABYLON.SixDofDragBehavior();
+passport.addBehavior(passportDragBehavior);
+
+let videogamesDragBehavior = new BABYLON.SixDofDragBehavior();
+videogames.addBehavior(videogamesDragBehavior);
+
+let bikeDragBehavior = new BABYLON.SixDofDragBehavior();
+bike.addBehavior(bikeDragBehavior);
+
+savebox.checkCollisions = true;
+book.checkCollisions = true;
+money.checkCollisions = true;
+phone.checkCollisions = true;
+bike.checkCollisions = true;
+passport.checkCollisions = true;
+videogames.checkCollisions = true;
+
+// Phone Drag
+
+
+
+
+
+
+phoneDragBehavior.onDragEndObservable.add((event) => {
+  if (phone.intersectsMesh(savebox, false)) {
+    if (savedItems.length == 0) {
+      phone.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      phone.position.x += 2;
+    } else if (savedItems.length == 1) {
+      phone.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      phone.position.x += 0;
+    } else if (savedItems.length == 2) {
+      phone.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      phone.position.x += -2;
+    }
+
+    savedItems.push("phone");
+
+   // phone.checkCollisions = false;
+  } else {
+    let frameRate = 30;
+
+    const phoneReturnAnim = new BABYLON.Animation(
+      "phoneReturnAnim",
+      "position",
+      frameRate,
+      BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
+      BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+    );
+
+    let phoneReturnAnimKeys = [];
+
+    phoneReturnAnimKeys.push({
+      frame: 0,
+      value: phone.position,
+    });
+
+    phoneReturnAnimKeys.push({
+      frame: 2 * frameRate,
+      value: new BABYLON.Vector3(6, 1, 1),
+    });
+
+    phoneReturnAnim.setKeys(phoneReturnAnimKeys);
+
+    phone.animations.push(phoneReturnAnim);
+
+    scene.beginAnimation(phone, 0, 2 * frameRate, true);
+
+    phone.setEnabled(false);
+
+    setTimeout(() => {
+      phone.setEnabled(true);
+      phone.rotation = new BABYLON.Vector3(3.141, 0, 9.5);
+
+      let phoneDragBehavior = new BABYLON.SixDofDragBehavior();
+      phone.addBehavior(phoneDragBehavior);
+    }, 5);
+
+
+    phone.rotation.x = 3.141
+        phone.rotation.z =9.5
+        phone.position.z = 1;
+
+  }
+});
+
+// book Drag
+
+
+bookDragBehavior.onDragEndObservable.add((event) => {
+  if (book.intersectsMesh(savebox, false)) {
+    if (savedItems.length == 0) {
+      book.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      book.position.x += 2;
+    } else if (savedItems.length == 1) {
+      book.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      book.position.x += 0;
+    } else if (savedItems.length == 2) {
+      book.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      book.position.x += -2;
+    }
+
+    savedItems.push("book");
+
+    //book.checkCollisions = false;
+  } else {
+    let frameRate = 30;
+
+    const bookReturnAnim = new BABYLON.Animation(
+      "bookReturnAnim",
+      "position",
+      frameRate,
+      BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
+      BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+    );
+
+    let bookReturnAnimKeys = [];
+
+    bookReturnAnimKeys.push({
+      frame: 0,
+      value: book.position,
+    });
+
+    bookReturnAnimKeys.push({
+      frame: 2 * frameRate,
+      value: new BABYLON.Vector3(3, 2, 0),
+    });
+
+    bookReturnAnim.setKeys(bookReturnAnimKeys);
+
+    book.animations.push(bookReturnAnim);
+
+    scene.beginAnimation(book, 0, 2 * frameRate, true);
+
+    book.setEnabled(false);
+
+    setTimeout(() => {
+      book.setEnabled(true);
+      book.rotation = new BABYLON.Vector3(3.141, 0, 9.5);
+
+      let bookDragBehavior = new BABYLON.SixDofDragBehavior();
+      book.addBehavior(bookDragBehavior);
+    }, 5);
+
+
+
+        book.rotation.x = 3.141
+        book.rotation.z =9.5
+       book.position.z = 1;
+
+  }
+});
+
+
+// money Drag
+
+
+
+moneyDragBehavior.onDragEndObservable.add((event) => {
+  if (money.intersectsMesh(savebox, false)) {
+    if (savedItems.length == 0) {
+      money.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      money.position.x += 2;
+    } else if (savedItems.length == 1) {
+      money.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      money.position.x += 0;
+    } else if (savedItems.length == 2) {
+      money.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      money.position.x += -2;
+    }
+
+    savedItems.push("money");
+
+    //money.checkCollisions = true;
+  } else {
+    let frameRate = 30;
+
+    const moneyReturnAnim = new BABYLON.Animation(
+      "moneyReturnAnim",
+      "position",
+      frameRate,
+      BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
+      BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+    );
+
+    let moneyReturnAnimKeys = [];
+
+    moneyReturnAnimKeys.push({
+      frame: 0,
+      value: money.position,
+    });
+
+    moneyReturnAnimKeys.push({
+      frame: 2 * frameRate,
+      value: new BABYLON.Vector3(7, -3, 0),
+    });
+
+    moneyReturnAnim.setKeys(moneyReturnAnimKeys);
+
+    money.animations.push(moneyReturnAnim);
+
+    scene.beginAnimation(money, 0, 2 * frameRate, true);
+
+    money.setEnabled(false);
+
+    setTimeout(() => {
+      money.setEnabled(true);
+      money.rotation = new BABYLON.Vector3(3.141, 0, 9.5);
+
+      let moneyDragBehavior = new BABYLON.SixDofDragBehavior();
+      money.addBehavior(moneyDragBehavior);
+    }, 5);
+
+   
+
+       money.rotation.x = 3.141
+        money.rotation.z =9.5
+        money.position.z = 1;
+
+  }
+});
+
+// passport Drag
+
+
+
+passportDragBehavior.onDragEndObservable.add((event) => {
+  if (passport.intersectsMesh(savebox, false)) {
+    if (savedItems.length == 0) {
+      passport.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      passport.position.x += 2;
+    } else if (savedItems.length == 1) {
+      passport.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      passport.position.x += 0;
+    } else if (savedItems.length == 2) {
+      passport.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      passport.position.x += -2;
+    }
+
+    savedItems.push("passport");
+
+    //passport.checkCollisions = true;
+  } else {
+    let frameRate = 30;
+
+    const passportReturnAnim = new BABYLON.Animation(
+      "passportReturnAnim",
+      "position",
+      frameRate,
+      BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
+      BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+    );
+
+    let passportReturnAnimKeys = [];
+
+    passportReturnAnimKeys.push({
+      frame: 0,
+      value: passport.position,
+    });
+
+    passportReturnAnimKeys.push({
+      frame: 2 * frameRate,
+      value: new BABYLON.Vector3(3.5, 0, 1),
+    });
+
+    passportReturnAnim.setKeys(passportReturnAnimKeys);
+
+    passport.animations.push(passportReturnAnim);
+
+    scene.beginAnimation(passport, 0, 2 * frameRate, true);
+
+    passport.setEnabled(false);
+
+    setTimeout(() => {
+      passport.setEnabled(true);
+      passport.rotation = new BABYLON.Vector3(3.141, 0, 9.5);
+
+      let passportDragBehavior = new BABYLON.SixDofDragBehavior();
+      passport.addBehavior(passportDragBehavior);
+    }, 5);
+
+
+
+        passport.rotation.x = 3.141
+        passport.rotation.z =9.5
+        passport.position.z = 1;
+  }
+});
+
+// bike Drag
+
+
+bikeDragBehavior.onDragEndObservable.add((event) => {
+  if (bike.intersectsMesh(savebox, false)) {
+    if (savedItems.length == 0) {
+      bike.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      bike.position.x += 2;
+    } else if (savedItems.length == 1) {
+      bike.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      bike.position.x += 0;
+    } else if (savedItems.length == 2) {
+      bike.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      bike.position.x += -2;
+    }
+
+    savedItems.push("bike");
+
+    //bike.checkCollisions = true;
+  } else {
+    let frameRate = 30;
+
+    const bikeReturnAnim = new BABYLON.Animation(
+      "bikeReturnAnim",
+      "position",
+      frameRate,
+      BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
+      BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+    );
+
+    let bikeReturnAnimKeys = [];
+
+    bikeReturnAnimKeys.push({
+      frame: 0,
+      value: bike.position,
+    });
+
+    bikeReturnAnimKeys.push({
+      frame: 2 * frameRate,
+      value: new BABYLON.Vector3(8, -0.4, 1),
+    });
+
+    bikeReturnAnim.setKeys(bikeReturnAnimKeys);
+
+    bike.animations.push(bikeReturnAnim);
+
+    scene.beginAnimation(bike, 0, 2 * frameRate, true);
+
+    bike.setEnabled(false);
+
+    setTimeout(() => {
+      bike.setEnabled(true);
+      bike.rotation = new BABYLON.Vector3(3.141, 0, 9.5);
+
+      let bikeDragBehavior = new BABYLON.SixDofDragBehavior();
+      bike.addBehavior(bikeDragBehavior);
+    }, 5);
+
+
+       bike.rotation.x = 3.141
+       bike.rotation.z =9.5
+        bike.position.z = 1;
+
+  }
+});
+
+// videogames Drag
+
+
+videogamesDragBehavior.onDragEndObservable.add((event) => {
+  if (videogames.intersectsMesh(savebox, false)) {
+    if (savedItems.length == 0) {
+      videogames.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      videogames.position.x += 2;
+    } else if (savedItems.length == 1) {
+      videogames.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      videogames.position.x += 0;
+    } else if (savedItems.length == 2) {
+      videogames.position = new BABYLON.Vector3(
+        savebox.position.x,
+        savebox.position.y,
+        savebox.position.z
+      );
+      videogames.position.x += -2;
+    }
+
+    savedItems.push("videogames");
+
+    //videogames.checkCollisions = true;
+  } else {
+    let frameRate = 30;
+
+    const videogamesReturnAnim = new BABYLON.Animation(
+      "videogamesReturnAnim",
+      "position",
+      frameRate,
+      BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
+      BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+    );
+
+    let videogamesReturnAnimKeys = [];
+
+    videogamesReturnAnimKeys.push({
+      frame: 0,
+      value: videogames.position,
+    });
+
+    videogamesReturnAnimKeys.push({
+      frame: 2 * frameRate,
+      value: new BABYLON.Vector3(2.5, -3, 1),
+    });
+
+    videogamesReturnAnim.setKeys(videogamesReturnAnimKeys);
+
+    videogames.animations.push(videogamesReturnAnim);
+
+    scene.beginAnimation(videogames, 0, 2 * frameRate, true);
+
+    videogames.setEnabled(false);
+
+    setTimeout(() => {
+      videogames.setEnabled(true);
+      videogames.rotation = new BABYLON.Vector3(3.141, 0, 9.5);
+
+      let videogamesDragBehavior = new BABYLON.SixDofDragBehavior();
+      videogames.addBehavior(videogamesDragBehavior);
+    }, 5);
+  }
+
+
+        videogames.rotation.x = 3.141
+        videogames.rotation.z =9.5
+        videogames.position.z = 1;
+
+});
+
+
+
+
+
+
+
+
+setInterval(() => {
+  if (savedItems.length == 3) {
+    setTimeout(() => {
+      window.location.href = "http://localhost:3000/1";
+    }, 1200);
+  }
+}, 1000);
+
+
+
+
+
+
+  // GUI
+  var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+  var textblock = new BABYLON.GUI.TextBlock();
+  textblock.text = "WHAT WILL YOU SAVE?";
+  textblock.fontSize = 18;
+  textblock.top = -150;
+  textblock.left = 350;
+  textblock.color = "aqua";
+  textblock.scaleX = 2
+  textblock.scaleY = 2
+  advancedTexture.addControl(textblock);
+
+
+
+
+      return scene;
+    };
+
+    // ***** START FRAMES
+
+    let scene = createScene(); //Call the createScene function
+
+    // Register a render loop to repeatedly render the scene
+    engine.runRenderLoop(function () {
+      scene.render();
+    });
+
+    // Watch for browser/canvas resize events
+    window.addEventListener("resize", function () {
+      engine.resize();
+    });
+  </script>
+</html>

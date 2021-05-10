@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Stick&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/index.css" />
+
+    <title>2 - Choose Items</title>
+  </head>
+
+  <body>
+    <!--touch-action="none" for best results from PEP-->
+    <canvas id="renderCanvas" touch-action="none"> </canvas>
+  </body>
+
+  <!-- Load Up Babylon -->
+  <script src="/babylon.js"></script>
+  <script src="/babylonjs.loaders.min.js"></script>
+
+  <script src="/cannon.js"></script>
+  <script src="/pep.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.2/socket.io.js"></script>
+  <script>
+    //  ******  BABYLON JS
+
+    let canvas = document.getElementById("renderCanvas"); // Get the canvas element
+
+    let engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine
+
+    let createScene = () => {
+      let scene = new BABYLON.Scene(engine);
+
+      // ***** AUDIO
+      var music = new BABYLON.Sound(
+        "Music",
+        "./int_one/int_one_theme.wav",
+        scene,
+        null,
+        {
+          loop: true,
+          autoplay: true,
+        }
+      );
+
+      scene.collisionsEnabled = true;
+
+      var bagHover = new BABYLON.Sound(
+        "bagHover",
+        "./int_one/bag_hover.mp3",
+        scene
+      );
+
+      //  ******  C A M E R A
+
+      let camera;
+
+      camera = new BABYLON.FreeCamera(
+        "UniversalCamera",
+        new BABYLON.Vector3(0, 0, 20),
+        scene
+      );
+      camera.panningSensibility = 0;
+
+      // camera.attachControl(canvas, true);
+
+      camera.setTarget(new BABYLON.Vector3(0, 0, 0));
+
+      //  ******  L I G H T S
+
+      //Directional Light
+      var light = new BABYLON.DirectionalLight(
+        "DirectionalLight",
+        new BABYLON.Vector3(0, 0, -1),
+        scene
+      );
+      light.diffuse = new BABYLON.Color3(1, 1, 1);
+      light.specular = new BABYLON.Color3(1, 1, 1);
+
+      light.intensity = .6;
+
+      //  ******  S K Y B O X
+      /*
+      var skybox = BABYLON.MeshBuilder.CreateBox("skyBox", { size: 2000.0 }, scene)
+      var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene)
+      skyboxMaterial.backFaceCulling = false;
+      skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture(
+        "./skybox/skybox",
+        scene
+      )
+      skyboxMaterial.reflectionTexture.coordinatesMode =
+        BABYLON.Texture.SKYBOX_MODE;
+      skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0)
+      skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0)
+      skybox.material = skyboxMaterial;
+
+      skybox.rotation.y = -500;
+    */
+      // ****** P H Y S I C S
+
+      var gravityVector = new BABYLON.Vector3(0, -9.81, 0);
+      var physicsPlugin = new BABYLON.CannonJSPlugin();
+      scene.enablePhysics(gravityVector, physicsPlugin);
+
+      // ****** M E S H E S
+
+      // HelperSphere
+
+      //HelperSphereMaterial
+      var helperSphereMat = new BABYLON.StandardMaterial(
+        "helperSphereMat",
+        scene
+      );
+
+      helperSphereMat.alpha = 0.1;
+
+      //HelperSphere
+
+      var helperSphere = BABYLON.MeshBuilder.CreateSphere(
+        "helperSphere",
+        {},
+        scene
+      );
+
+      helperSphere.position = new BABYLON.Vector3(0, 0, 0);
+      helperSphere.scaling = new BABYLON.Vector3(80, 80, 80);
+      helperSphere.rotation = new BABYLON.Vector3(0, 0, 0);
+      helperSphere.material = helperSphereMat;
+
+      //***** Meshes
+
+      // Selected bag
+
+      // selectedBagMat
+      var selectedBagMat = new BABYLON.StandardMaterial(
+        "selectedBagMat",
+        scene
+      );
+      selectedBagMat.diffuseTexture = new BABYLON.Texture(
+        localStorage.getItem("aog_bag"),
+        scene
+      );
+      selectedBagMat.diffuseTexture.hasAlpha = true;
+
+      //SelectedBagMesh
+
+      var selectedBag = BABYLON.MeshBuilder.CreatePlane(
+        "selectedBag",
+        {},
+        scene
+      );
+
+      selectedBag.position = new BABYLON.Vector3(5, 0, 0);
+      selectedBag.scaling = new BABYLON.Vector3(3, 3, 3);
+      selectedBag.rotation = new BABYLON.Vector3(3, 0, 9.5);
+      selectedBag.material = selectedBagMat;
+
+      let highlightedBag;
+
+      if (localStorage.getItem("aog_bag") == "./int_one/bag1.png") {
+        // highlightedBagMat
+        var highlightedBagMat = new BABYLON.StandardMaterial(
+          "highlightedBagMat",
+          scene
+        );
+        highlightedBagMat.diffuseTexture = new BABYLON.Texture(
+          "./int_two/bag1_highlight.png",
+          scene
+        );
+        highlightedBagMat.diffuseTexture.hasAlpha = true;
+
+        //highlightedBagMesh
+
+        highlightedBag = BABYLON.MeshBuilder.CreatePlane(
+          "selectedBag",
+          {},
+          scene
+        );
+
+        highlightedBag.position = new BABYLON.Vector3(5, 0, 0);
+        highlightedBag.scaling = new BABYLON.Vector3(3, 3, 3);
+        highlightedBag.rotation = new BABYLON.Vector3(3, 0, 9.5);
+        highlightedBag.material = highlightedBagMat;
+        highlightedBag.setEnabled(false);
+      } else if (localStorage.getItem("aog_bag") == "./int_one/bag2.png") {
+        // highlightedBagMat
+        var highlightedBagMat = new BABYLON.StandardMaterial(
+          "highlightedBagMat",
+          scene
+        );
+        highlightedBagMat.diffuseTexture = new BABYLON.Texture(
+          "./int_two/bag2_highlight.png",
+          scene
+        );
+        highlightedBagMat.diffuseTexture.hasAlpha = true;
+
+        //highlightedBagMesh
+
+        highlightedBag = BABYLON.MeshBuilder.CreatePlane(
+          "selectedBag",
+          {},
+          scene
+        );
+
+        highlightedBag.position = new BABYLON.Vector3(5, 0, 0);
+        highlightedBag.scaling = new BABYLON.Vector3(3, 3, 3);
+        highlightedBag.rotation = new BABYLON.Vector3(3, 0, 9.5);
+        highlightedBag.material = highlightedBagMat;
+        highlightedBag.setEnabled(false);
+      } else if (localStorage.getItem("aog_bag") == "./int_one/bag3.png") {
+        // highlightedBagMat
+        var highlightedBagMat = new BABYLON.StandardMaterial(
+          "highlightedBagMat",
+          scene
+        );
+        highlightedBagMat.diffuseTexture = new BABYLON.Texture(
+          "./int_two/bag3_highlight.png",
+          scene
+        );
+        highlightedBagMat.diffuseTexture.hasAlpha = true;
+
+        //highlightedBagMesh
+
+        highlightedBag = BABYLON.MeshBuilder.CreatePlane(
+          "selectedBag",
+          {},
+          scene
+        );
+
+        highlightedBag.position = new BABYLON.Vector3(5, 0, 0);
+        highlightedBag.scaling = new BABYLON.Vector3(3, 3, 3);
+        highlightedBag.rotation = new BABYLON.Vector3(3, 0, 9.5);
+        highlightedBag.material = highlightedBagMat;
+        highlightedBag.setEnabled(false);
+      } else if (localStorage.getItem("aog_bag") == "./int_one/bag4.png") {
+        // highlightedBagMat
+        var highlightedBagMat = new BABYLON.StandardMaterial(
+          "highlightedBagMat",
+          scene
+        );
+        highlightedBagMat.diffuseTexture = new BABYLON.Texture(
+          "./int_two/bag4_highlight.png",
+          scene
+        );
+        highlightedBagMat.diffuseTexture.hasAlpha = true;
+
+        //highlightedBagMesh
+
+        highlightedBag = BABYLON.MeshBuilder.CreatePlane(
+          "selectedBag",
+          {},
+          scene
+        );
+
+        highlightedBag.position = new BABYLON.Vector3(5, 0, 0);
+        highlightedBag.scaling = new BABYLON.Vector3(3, 3, 3);
+        highlightedBag.rotation = new BABYLON.Vector3(3, 0, 9.5);
+        highlightedBag.material = highlightedBagMat;
+        highlightedBag.setEnabled(false);
+      } else if (localStorage.getItem("aog_bag") == "./int_one/bag5.png") {
+        // highlightedBagMat
+        var highlightedBagMat = new BABYLON.StandardMaterial(
+          "highlightedBagMat",
+          scene
+        );
+        highlightedBagMat.diffuseTexture = new BABYLON.Texture(
+          "./int_two/bag5_highlight.png",
+          scene
+        );
+        highlightedBagMat.diffuseTexture.hasAlpha = true;
+
+        //highlightedBagMesh
+
+        highlightedBag = BABYLON.MeshBuilder.CreatePlane(
+          "selectedBag",
+          {},
+          scene
+        );
+
+        highlightedBag.position = new BABYLON.Vector3(5, 0, 0);
+        highlightedBag.scaling = new BABYLON.Vector3(3, 3, 3);
+        highlightedBag.rotation = new BABYLON.Vector3(3, 0, 9.5);
+        highlightedBag.material = highlightedBagMat;
+        highlightedBag.setEnabled(false);
+      }
+
+      // mgGlassMat
+      var mgGlassMat = new BABYLON.StandardMaterial("mgGlassMat", scene);
+      mgGlassMat.diffuseTexture = new BABYLON.Texture(
+        "./int_two/mgGlass.png",
+        scene
+      );
+      mgGlassMat.diffuseTexture.hasAlpha = true;
+
+      //mgGlassMesh
+
+      var mgGlass = BABYLON.MeshBuilder.CreatePlane("mgGlassMesh", {}, scene);
+
+      mgGlass.position = new BABYLON.Vector3(-5, 5, 0);
+      mgGlass.scaling = new BABYLON.Vector3(3, 3, 3);
+      mgGlass.rotation = new BABYLON.Vector3(3, 0, 9.5);
+      mgGlass.material = mgGlassMat;
+
+      // mapMat
+      var mapMat = new BABYLON.StandardMaterial("mapMat", scene);
+      mapMat.diffuseTexture = new BABYLON.Texture("./int_two/map.png", scene);
+      mapMat.diffuseTexture.hasAlpha = true;
+
+      //mapMesh
+
+      var map = BABYLON.MeshBuilder.CreatePlane("mapMesh", {}, scene);
+
+      map.position = new BABYLON.Vector3(-5, 0, 0);
+      map.scaling = new BABYLON.Vector3(3, 3, 3);
+      map.rotation = new BABYLON.Vector3(3, 0, 9.5);
+      map.material = mapMat;
+
+      // torch
+      var torchMat = new BABYLON.StandardMaterial("torchMat", scene);
+      torchMat.diffuseTexture = new BABYLON.Texture(
+        "./int_two/torch.png",
+        scene
+      );
+      torchMat.diffuseTexture.hasAlpha = true;
+
+      //torchMesh
+
+      var torch = BABYLON.MeshBuilder.CreatePlane("torchMesh", {}, scene);
+
+      torch.position = new BABYLON.Vector3(-5, -5, 1);
+      torch.scaling = new BABYLON.Vector3(3, 2, 3);
+      torch.rotation = new BABYLON.Vector3(3, 0, 9.5);
+      torch.material = torchMat;
+
+ 
+
+      // Drag Behavior
+
+      let baggedItems = [];
+
+      var mgGlassDragBehavior = new BABYLON.SixDofDragBehavior();
+      mgGlass.addBehavior(mgGlassDragBehavior);
+      var mapDragBehavior = new BABYLON.SixDofDragBehavior();
+      map.addBehavior(mapDragBehavior);
+      var torchDragBehavior = new BABYLON.SixDofDragBehavior();
+      torch.addBehavior(torchDragBehavior);
+
+      selectedBag.checkCollisions = true;
+      mgGlass.checkCollisions = true;
+      map.checkCollisions = true;
+      torch.checkCollisions = true;
+
+      let mgGlassHover = 0;
+      torchHover = 0;
+      mapHover = 0;
+
+      setInterval(() => {
+        let pickResult = scene.pick(scene.pointerX, scene.pointerY);
+        //If LightTorce is On
+        //If Bag One Pointed
+
+        console.log(baggedItems.length);
+
+        if (
+          baggedItems.includes("mgGlass", 0) &&
+          baggedItems.includes("torch", 0) &&
+          baggedItems.includes("map", 0)
+        ) {
+            setTimeout(() => {
+            window.location.href = "http://localhost:3000/3";
+            },1200)
+        }
+
+        if (pickResult) {
+          //BagOne
+          if (pickResult.pickedMesh.id == "mgGlassMesh") {
+            //If hovered over a second grant sixdof behvaior
+
+            //Toggle Bag Highlight
+            if (mgGlass.intersectsMesh(selectedBag, false)) {
+              selectedBag.setEnabled(false);
+              highlightedBag.setEnabled(true);
+            } else {
+              selectedBag.setEnabled(true);
+              highlightedBag.setEnabled(false);
+            }
+
+            // If Dropped
+            mgGlassDragBehavior.onDragEndObservable.add((event) => {
+              if (mgGlass.intersectsMesh(selectedBag, false)) {
+                mgGlass.setEnabled(false);
+                bagHover.play();
+                console.log("mgGlassBagged");
+                baggedItems.push("mgGlass");
+
+              } else {
+              }
+            });
+          } else if (pickResult.pickedMesh.id == "mapMesh") {
+            //Toggle Bag Highlight
+            if (map.intersectsMesh(selectedBag, false)) {
+              selectedBag.setEnabled(false);
+              highlightedBag.setEnabled(true);
+            } else {
+              selectedBag.setEnabled(true);
+              highlightedBag.setEnabled(false);
+            }
+
+            // If Dropped
+            mapDragBehavior.onDragEndObservable.add((event) => {
+              if (map.intersectsMesh(selectedBag, false)) {
+                map.setEnabled(false);
+                bagHover.play();
+                console.log("mapBagged");
+                baggedItems.push("map");
+              } else {
+              }
+            });
+
+            //others
+          } else if (pickResult.pickedMesh.id == "torchMesh") {
+            if (torch.intersectsMesh(selectedBag, false)) {
+              selectedBag.setEnabled(false);
+              highlightedBag.setEnabled(true);
+            } else {
+              selectedBag.setEnabled(true);
+              highlightedBag.setEnabled(false);
+            }
+            // If Dropped
+            torchDragBehavior.onDragEndObservable.add((event) => {
+              if (torch.intersectsMesh(selectedBag, false)) {
+                torch.setEnabled(false);
+                bagHover.play();
+                console.log("torchBagged");
+                baggedItems.push("torch");
+              } else {
+              }
+            });
+
+            //others
+          }
+        }
+      }, 1000 / 5);
+
+
+
+
+
+
+
+
+      // firebgMat
+      let firebgMat = new BABYLON.StandardMaterial("firebgMat", scene);
+      firebgMat.diffuseTexture = new BABYLON.Texture(
+        "./background.jpeg",
+        scene
+      );
+      firebgMat.diffuseTexture.hasAlpha = true;
+
+      //firebgMesh
+
+      let firebg = BABYLON.MeshBuilder.CreatePlane("firebg", {}, scene);
+
+      firebg.position = new BABYLON.Vector3(4.5, 0, -2);
+      firebg.scaling = new BABYLON.Vector3(50, 25, 1);
+      firebg.rotation = new BABYLON.Vector3(3.141, 0, 9.43);
+      firebg.emissiveColor = new BABYLON.Color3(1, 1, 1);
+      firebg.material = firebgMat;
+
+      return scene;
+    };
+
+    // ***** START FRAMES
+
+    let scene = createScene(); //Call the createScene function
+
+    // Register a render loop to repeatedly render the scene
+    engine.runRenderLoop(function () {
+      scene.render();
+    });
+
+    // Watch for browser/canvas resize events
+    window.addEventListener("resize", function () {
+      engine.resize();
+    });
+  </script>
+</html>

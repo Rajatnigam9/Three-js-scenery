@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Stick&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/index.css" />
+
+    <title>3 - Earthworms</title>
+  </head>
+
+  <body>
+    <!--touch-action="none" for best results from PEP-->
+    <canvas id="renderCanvas" touch-action="none"> </canvas>
+  </body>
+
+  <!-- Load Up Babylon -->
+  <script src="/babylon.js"></script>
+  <script src="/babylonjs.loaders.min.js"></script>
+
+  <script src="/cannon.js"></script>
+  <script src="/pep.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.2/socket.io.js"></script>
+  <script>
+    //  ******  BABYLON JS
+
+    let canvas = document.getElementById("renderCanvas"); // Get the canvas element
+
+    let engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine
+
+    let createScene = () => {
+      let scene = new BABYLON.Scene(engine);
+   
+      // ***** AUDIO
+      var music = new BABYLON.Sound(
+        "Music",
+        "./int_three/int_three_theme.wav",
+        scene,
+        null,
+        {
+          loop: true,
+          autoplay: true,
+        }
+      );
+
+      scene.collisionsEnabled = true;
+
+      var bagHover = new BABYLON.Sound(
+        "bagHover",
+        "./int_one/bag_hover.mp3",
+        scene
+      );
+
+      //  ******  C A M E R A
+
+      let camera;
+
+      camera = new BABYLON.FreeCamera(
+        "UniversalCamera",
+        new BABYLON.Vector3(0, 0, 20),
+        scene
+      );
+
+      
+      camera.panningSensibility = 0;
+
+      // camera.attachControl(canvas, true);
+
+      camera.setTarget(new BABYLON.Vector3(0, 0, 0));
+
+      //  ******  L I G H T S
+
+      //Directional Light
+      var light = new BABYLON.HemisphericLight(
+        "DirectionalLight",
+        new BABYLON.Vector3(0, 0, -1),
+        scene
+      );
+      light.diffuse = new BABYLON.Color3(1, 1, 1);
+      light.specular = new BABYLON.Color3(1, 1, 1);
+
+      light.intensity = 0.01;
+
+      //  ******  S K Y B O X
+      /*
+         var skybox = BABYLON.MeshBuilder.CreateBox("skyBox", { size: 2000.0 }, scene)
+         var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene)
+         skyboxMaterial.backFaceCulling = false;
+         skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture(
+           "./skybox/skybox",
+           scene
+         )
+         skyboxMaterial.reflectionTexture.coordinatesMode =
+           BABYLON.Texture.SKYBOX_MODE;
+         skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0)
+         skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0)
+         skybox.material = skyboxMaterial;
+
+         skybox.rotation.y = -500;
+       */
+      // ****** P H Y S I C S
+
+      var gravityVector = new BABYLON.Vector3(0, -9.81, 0);
+      var physicsPlugin = new BABYLON.CannonJSPlugin();
+      scene.enablePhysics(gravityVector, physicsPlugin);
+
+      // ****** M E S H E S
+
+      //ground
+
+      //Ground Material
+      let groundMat = new BABYLON.StandardMaterial("groundMat", scene);
+      groundMat.diffuseTexture = new BABYLON.Texture(
+        "./int_three/ground_diffuse.jpg",
+        scene
+      );
+
+      
+      groundMat.specularTexture = new BABYLON.Texture(
+        "./int_three/ground_specular.jpg",
+        scene
+      );
+      
+      groundMat.ambientTexture = new BABYLON.Texture(
+        "./int_three/ground_ambient.jpg",
+        scene
+      );
+
+      groundMat.normalTexture = new BABYLON.Texture(
+        "./int_three/ground_normal.jpg",
+        scene
+      );
+
+
+
+      let ground = BABYLON.MeshBuilder.CreatePlane("selectedBag", {}, scene);
+
+      ground.position = new BABYLON.Vector3(0, 0, -2);
+      ground.scaling = new BABYLON.Vector3(45, 45, 45);
+      ground.rotation = new BABYLON.Vector3(-3, 0, 0);
+      ground.material = groundMat;
+
+      // leaves
+
+      /*
+
+      //Ground Material
+      let leavesMat = new BABYLON.StandardMaterial("leavesMat", scene);
+      leavesMat.diffuseTexture = new BABYLON.Texture(
+        "./int_three/leaves.png",
+        scene
+      );
+
+      leavesMat.diffuseTexture.hasAlpha = true;
+
+      let leaves = BABYLON.MeshBuilder.CreatePlane("leaves", {}, scene);
+
+      leaves.position = new BABYLON.Vector3(-3, 0, 0.2);
+      leaves.scaling = new BABYLON.Vector3(35, 30, 4);
+      leaves.rotation = new BABYLON.Vector3(3, 0, 6);
+      leaves.material = leavesMat;
+
+*/
+
+      // worms
+      // wormOne
+      BABYLON.SceneLoader.ImportMesh(
+        "",
+        "./int_three/",
+        "earthworm.glb",
+        scene,
+        function (newMeshes, particleSystems, skeletons, animationGroups) {
+          let earthworm_one = newMeshes[0];
+
+          earthworm_one.position = new BABYLON.Vector3(-6.5, 2, .9);
+          earthworm_one.scaling = new BABYLON.Vector3(0.07, 0.07, 0.07);
+          earthworm_one.rotation = new BABYLON.Vector3(4, 0, 9.3);
+        }
+      );
+
+      //wormTwo
+
+      BABYLON.SceneLoader.ImportMesh(
+        "",
+        "./int_three/",
+        "earthworm2.glb",
+        scene,
+        function (newMeshes, particleSystems, skeletons, animationGroups) {
+          let earthworm_two = newMeshes[0];
+
+          earthworm_two.position = new BABYLON.Vector3(6, -4, .9);
+          earthworm_two.scaling = new BABYLON.Vector3(0.07, 0.07, 0.07);
+          earthworm_two.rotation = new BABYLON.Vector3(4, 0, 9.3);
+        }
+      );
+
+      // torchLight
+
+      let torchLight = new BABYLON.SpotLight(
+        "spotLight",
+        new BABYLON.Vector3(0, 0, 5),
+        new BABYLON.Vector3(0, 0, -1),
+        Math.PI / 1,
+        4,
+        scene
+      );
+      torchLight.diffuse = new BABYLON.Color3(1.2, 1, 0.5);
+      torchLight.range = 350;
+      torchLight.setEnabled(false);
+
+      torchLight.intensity = .6;
+      
+
+      //torch
+
+      BABYLON.SceneLoader.ImportMesh(
+        "",
+        "./int_three/",
+        "torch.glb",
+        scene,
+        function (newMeshes, particleSystems, skeletons, animationGroups) {
+          let torch = newMeshes[0];
+
+          torch.scaling = new BABYLON.Vector3(1, 1, 1);
+          torch.rotation = new BABYLON.Vector3(-5.9, 0, 0);
+
+          setInterval(() => {
+            let pickResult = scene.pick(scene.pointerX, scene.pointerY);
+            torch.position.x = pickResult.pickedPoint.x;
+            torch.position.y = pickResult.pickedPoint.y -1.6;
+            torch.position.z = 4;
+
+            torchLight.setEnabled(true);
+            torchLight.position.x = torch.position.x -.5;
+            torchLight.position.y = torch.position.y;
+
+            torchLight.position.z = torch.position.z;
+
+            console.log(pickResult.pickedPoint.x);
+          }, 1000 / 30);
+        }
+      );
+
+      // Worm Click
+
+      var wormClick = new BABYLON.Sound(
+        "wormClick",
+        "./int_three/worm_click.mp3",
+        scene
+      );
+
+      let wormCount = 0;
+
+      window.addEventListener("click", () => {
+        let pickResult = scene.pick(scene.pointerX, scene.pointerY);
+        console.log(pickResult);
+
+        if (pickResult.pickedMesh.id == "Cube.001__0") {
+          console.log(wormCount);
+          wormCount += 1;
+          wormClick.play();
+          scene.getMeshByName("Cube.001__0").dispose();
+
+          // Create a particle system
+          const particleSystem = new BABYLON.ParticleSystem("particles", 1000);
+
+          //Texture of each particle
+          particleSystem.particleTexture = new BABYLON.Texture(
+            "./int_three/flare.png"
+          );
+
+          // Position where the particles are emiited from
+          particleSystem.emitter = new BABYLON.Vector3(-6.5, 2, 1.5);
+
+          particleSystem.start();
+
+          setTimeout(() => {
+            particleSystem.stop();
+          }, 500);
+
+          if (wormCount == 2) {
+            console.log("Done");
+            setTimeout(() => {
+              window.location.href = "http://localhost:3000/4";
+            }, 1200);
+          }
+        }
+
+        if (pickResult.pickedMesh.id == "Cube.002__0") {
+          console.log(wormCount);
+          wormCount += 1;
+          wormClick.play();
+          scene.getMeshByName("Cube.002__0").dispose();
+
+          // Create a particle system
+          const particleSystem = new BABYLON.ParticleSystem("particles", 1000);
+
+          //Texture of each particle
+          particleSystem.particleTexture = new BABYLON.Texture(
+            "./int_three/flare.png"
+          );
+
+          // Position where the particles are emiited from
+          particleSystem.emitter = new BABYLON.Vector3(6, -4, 1);
+
+          particleSystem.start();
+
+          setTimeout(() => {
+            particleSystem.stop();
+          }, 500);
+
+          if (wormCount == 2) {
+            console.log("Done");
+            setTimeout(() => {
+              window.location.href = "http://localhost:3000/4";
+            }, 1200);
+          }
+        }
+      });
+
+      return scene;
+    };
+
+    // ***** START FRAMES
+
+    let scene = createScene(); //Call the createScene function
+
+    // Register a render loop to repeatedly render the scene
+    engine.runRenderLoop(function () {
+      scene.render();
+    });
+
+    // Watch for browser/canvas resize events
+    window.addEventListener("resize", function () {
+      engine.resize();
+    });
+  </script>
+</html>
