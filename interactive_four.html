@@ -380,6 +380,15 @@
                   mushroomOutlined2.setEnabled(false);
                   
                 }
+				if (
+                  hit.pickedPoint.x < -9 )
+				  {
+				  mainMaterial.refractionTexture.depth=-0.5;
+				  }
+				  else
+				  {
+				  mainMaterial.refractionTexture.depth=-2;
+				  }
               }
             }
 
